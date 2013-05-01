@@ -1,5 +1,14 @@
 /*
- Motor control for Saphira.
+ Motor control for Saphira
+ Gordon Good (velo27@yahoo.com)
+ - Joystick X axis to analog 0
+ - Joystick Y axis to analog 1
+ - Joystick button to digital 6
+ 
+ - Right motor controller from digital 9
+ - Left motor controller from digital 10
+ - LED (or whatever you want to actuate on button press)
+   from digital pin 7
  */
 
 #include <Servo.h>
@@ -31,7 +40,6 @@ unsigned int joyY = 0;  // Y joystick value
 unsigned int joyButton = 0;  // Joystick button value
 
 void setup() {
-  // initialize serial communications at 9600 bps:
   Serial.begin(9600);
   pinMode(joyButtonPin, INPUT_PULLUP);
   pinMode(buttonLEDPin, OUTPUT);
@@ -48,7 +56,7 @@ void loop() {
   joyButton = digitalRead(joyButtonPin);
   
   // If the X axis of the joystick is close to either
-  // end of it range of motion, do a turn. Otherwise,
+  // end of its range of motion, do a turn. Otherwise,
   // go forward or backward depending on the Y axis
   // value.
   
@@ -65,7 +73,7 @@ void loop() {
   } else {
     // Go forward/backward, according to Y axis. Send
     // both motors the same value. Our Y axis is "upside down"
-    // hence reversing the rane 
+    // which is why we reverse the range in the map() call.
     unsigned int value = map(joyY, joyMin, joyMax, motorMax, motorMin);
     motorControllerRight.write(value);
     motorControllerLeft.write(value);
