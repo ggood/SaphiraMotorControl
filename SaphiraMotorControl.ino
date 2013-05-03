@@ -9,6 +9,15 @@
  - Left motor controller from digital 10
  - LED (or whatever you want to actuate on button press)
    from digital pin 7
+   
+ - The motors will not move unless pin 2 is
+   pulled low. The intent is that unplugging
+   the control joystick cable will inhibit
+   movement by disconnecting the pulldown for
+   that pin. Otherwise, the motors might turn
+   on randomly because the analog inputs are
+   floating. No one wants a runaway fire-breathing
+   animatronic robot. 
  */
 
 #include <Servo.h>
@@ -17,6 +26,7 @@
 const unsigned int joyXPin = A0;  // Joystick X axis
 const unsigned int joyYPin = A1;  // Joystick Y axis
 const unsigned int joyButtonPin = 6;  // Joystick button
+const unsigned int inhibitPin = 2;  // Must be pulled low to enable motors
 
 // Input ranges
 const unsigned int joyMin = 0;
@@ -42,6 +52,7 @@ unsigned int joyButton = 0;  // Joystick button value
 void setup() {
   Serial.begin(9600);
   pinMode(joyButtonPin, INPUT_PULLUP);
+  pinMode(inhibitPin, INPUT_PULLUP);
   pinMode(buttonLEDPin, OUTPUT);
   motorControllerRight.attach(motorRightPin);
   motorControllerRight.write(90);
@@ -50,6 +61,12 @@ void setup() {
 }
 
 void loop() {
+  // Check for inhibit (pull low to allow movement)
+  if (digitalRead(inhibitPin) == LOW) {
+    // Inhibited - wait, then check again
+    delay(500);
+    return;
+  }
   // Read the joystick
   joyX = analogRead(joyXPin); 
   joyY = analogRead(joyYPin);
