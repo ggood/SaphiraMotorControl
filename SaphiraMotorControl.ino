@@ -62,6 +62,7 @@ void setup() {
 
 void loop() {
   // Check for inhibit (pull low to allow movement)
+
   if (digitalRead(inhibitPin) == HIGH) {
     // Inhibited - wait, then check again
     delay(500);
