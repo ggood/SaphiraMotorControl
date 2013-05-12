@@ -41,6 +41,7 @@ const unsigned int buttonLEDPin = 7;  // Turn on an LED when button pressed
 // Output ranges
 const unsigned int motorMin = 0;
 const unsigned int motorMax = 179;
+const unsigned int motorTurn = 15;  // Offset for turning
 
 Servo motorControllerRight;
 Servo motorControllerLeft;
@@ -48,6 +49,8 @@ Servo motorControllerLeft;
 unsigned int joyX = 0;  // X joystick value
 unsigned int joyY = 0;  // Y joystick value
 unsigned int joyButton = 0;  // Joystick button value
+
+boolean inhibited = true;
 
 void setup() {
   Serial.begin(9600);
@@ -65,6 +68,17 @@ void loop() {
 
   if (digitalRead(inhibitPin) == HIGH) {
     // Inhibited - wait, then check again
+    motorControllerRight.write(90);
+    motorControllerLeft.write(90);
+    inhibited = true;
+    Serial.println("Inhibited");
+    delay(500);
+    return;
+  } else if (inhibited) {
+    // Coming out of inhibited mode. Wait a bit
+    // to avoid intermittent readins when plugging
+    // in joystick.
+    inhibited = false;
     delay(500);
     return;
   }
@@ -79,24 +93,38 @@ void loop() {
   // value.
   
   if  (joyX < joyMin + 10){
-    // Turn left - forward right, backward left
-    motorControllerRight.write(motorMax);
-    motorControllerLeft.write(motorMin);
+    // Turn left - forward right, backward left. But since
+    // the motors are mounted 180 degrees apart, turn them
+    // both forward.
+    motorControllerRight.write(90 + motorTurn);
+    motorControllerLeft.write(90 + motorTurn);
     Serial.println("Left");
   } else if (joyX > joyMax - 10) {
-    // Turn right - backward right, forward left
-    motorControllerRight.write(motorMin);
-    motorControllerLeft.write(motorMax);
+    // Turn right - backward right, forward left. 
+    motorControllerRight.write(90 - motorTurn);
+    motorControllerLeft.write(90 - motorTurn);
     Serial.println("Right");
   } else {
     // Go forward/backward, according to Y axis. Send
     // both motors the same value. Our Y axis is "upside down"
     // which is why we reverse the range in the map() call.
+    // Also, enlarge the "dead zone" in the middle of the range
     unsigned int value = map(joyY, joyMin, joyMax, motorMax, motorMin);
-    motorControllerRight.write(value);
-    motorControllerLeft.write(value);
-    Serial.print("Forward ");
-    Serial.println(value);
+    int offset = (int)value - 90;
+    if (abs(offset) < 10) {
+      offset = 0;
+    } else {
+      offset = map(offset, 0, 90, 0, 20);
+    }
+    motorControllerRight.write(90 + offset);
+    motorControllerLeft.write(90 - offset);
+    Serial.print("Forward: ");
+    Serial.print("Raw: ");
+    Serial.print(value);
+    Serial.print(" R: ");
+    Serial.print(90 + offset);
+    Serial.print(" L: ");
+    Serial.println(90 - offset);
   }
   digitalWrite(buttonLEDPin, !joyButton);
   delay(10);                     
